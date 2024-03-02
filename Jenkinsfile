@@ -40,6 +40,15 @@ pipeline {
                 sh "echo helm installed succesfully"
                 sh "helm install project-1 python-project --set appimage=${registry}:v${BUILD_NUMBER}"
             }
-        }      
+        }    
+        stage('Monitoring tool prometheus container') {
+           steps {
+                sh "helm repo add prometheus-community https://prometheus-community.github.io/helm-charts"
+                sh "helm repo update"
+                sh "helm install my-kube-prometheus-stack prometheus-community/kube-prometheus-stack"
+            }
+        }
+        
+
     }
 }
