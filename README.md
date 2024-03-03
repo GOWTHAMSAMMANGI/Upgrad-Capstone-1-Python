@@ -7,7 +7,7 @@ This deployment will focus on containerization using `Docker`, `Kubernetes` orch
 This tools should be installed on your vms:
 - Docker
 - Kubectl
-- Minikube
+- AWS EKS
 - Helm
 - Jenkins
 
@@ -46,9 +46,9 @@ In this project we are running the application on port 3000 but you can choose a
 - Build image from Dockerfile and tag it with your dockerhub repository name. e.g.
 `Docker build -t iamsauravsingh/python-app` and push it to dockerhub.
 
-## Step 3: Set Up Minikube Kubernetes Cluster
+## Step 3: Set Up AWS EKS Cluster
 
-- Create a minikube cluster with `minikube start` command.
+- Create a AWS EKS cluster using Terraform.
 
 ## Step 4: Create a helm chart
 
@@ -68,70 +68,22 @@ b) Pipeline Utilities
 
 - Now click `manage jenkins` and then go to `credentials` and create a new credentials for your dockerhub login. 
 
-- Now create a pipeline job and write the pipeline script. Your Jenkinsfile should look something like this:
- 
-```
-pipeline {
-    agent any
-    environment {
-        registry = "iamsauravsingh/python-app"
-        registryCredential = 'dockerhub'
-    }
-
-    stages {
-        stage('git checkout') {
-            steps {
-                git branch: 'project-1', url: 'https://github.com/iamsauravsingh7/kh-project.git'
-            }
-        }
-        
-        stage('Build docker image') {
-            steps {
-                script {
-                  dockerImage = docker.build registry + ":v$BUILD_NUMBER"
-              }
-            }
-        }
-        stage('Upload Image'){
-          steps{
-            script {
-              docker.withRegistry('', registryCredential) {
-                dockerImage.push("v$BUILD_NUMBER")
-                dockerImage.push('latest')
-              }
-            }
-          }
-        }
-        stage('Remove Unused docker image') {
-          steps{
-            sh "docker rmi $registry:v$BUILD_NUMBER"
-          }
-        }
-        stage('Deploying container to Kubernetes') {
-            agent {label 'control-plane'}
-                steps {
-                     sh "helm install project-1 python-project --set appimage=${registry}:v${BUILD_NUMBER}"
-            }
-        }      
-    }
-}
-```
-In this Jenkinsfile my kubernetes cluster is running on another vm so I have used that server as worker node. If your Kubernetes cluster is running on same server you do not have to create a worker node.
+- Now run the pipeline using GIT SCM and specify the jenkins file
 
 - Now click on `Build Now` and after sometime you will get similar results like this: 
-![Grafana Dashboard](./Screenshots/Screenshot%20(86).png "python-application")
+![image](https://github.com/GOWTHAMSAMMANGI/Upgrad-Capstone-1-Python/assets/62459668/9b71fadc-50eb-4b1a-bae4-243358d30647)
+
 
 ## Step 6:Testing and Verification
 
 Here we will verify that our application is successfully deployed on kubernetes or not.
-- Now go to the kubernetes cluster and run `kubectl get deployments` you will get something like this:
-![kubernetes-deployment](./Screenshots/Screenshot%20(84).png "python-application")
-- Then run the command `minikube service python-app` and you will be redirected to page similar to this: 
-![kubernetes-deployment](./Screenshots/Screenshot%20(85).png "python-application")
+- Now go to the kubernetes cluster and run `kubectl get pods` you will get something like this:
+
+![image](https://github.com/GOWTHAMSAMMANGI/Upgrad-Capstone-1-Python/assets/62459668/95d1e17e-177e-48b3-93e5-4674e4600683)
 
 ## Step 7: Monitoring and Logging
 
-In this Project we are using Prometheus and grafana to monitor our application. We are using helm charts to setup prometheus and Grafana. To setup prometheus and Grafana use command:
+In this Project we are using Prometheus and grafana to monitor our application. We are using helm charts to setup prometheus and Grafana. To setup prometheus and Grafana use one more stage in pipeline with below commands:
 ```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts  
 helm repo update
@@ -139,22 +91,11 @@ helm install my-kube-prometheus-stack prometheus-community/kube-prometheus-stack
 ```
 
 Now to go the kubernetes cluster and change the service type to NodePort service named `my-kube-prometheus-stack-grafana` run the command `kubectl get svc` you will get similar output: 
-```bash
-rajsinghrajput407@control-plane:~$ kubectl get svc 
-NAME                                                TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
-alertmanager-operated                               ClusterIP   None             <none>        9093/TCP,9094/TCP,9094/UDP   15h
-kubernetes                                          ClusterIP   10.96.0.1        <none>        443/TCP                      7d16h
-my-kube-prometheus-stack-alertmanager               ClusterIP   10.99.133.246    <none>        9093/TCP,8080/TCP            15h
-my-kube-prometheus-stack-grafana                    NodePort    10.106.104.73    <none>        80:32090/TCP                 15h
-my-kube-prometheus-stack-kube-state-metrics         ClusterIP   10.99.168.133    <none>        8080/TCP                     15h
-my-kube-prometheus-stack-operator                   ClusterIP   10.110.78.159    <none>        443/TCP                      15h
-my-kube-prometheus-stack-prometheus                 ClusterIP   10.110.188.213   <none>        9090/TCP,8080/TCP            15h
-my-kube-prometheus-stack-prometheus-node-exporter   ClusterIP   10.98.70.145     <none>        9100/TCP                     15h
-prometheus-operated                                 ClusterIP   None             <none>        9090/TCP                     15h
-python-app                                          NodePort    10.104.220.123   <none>        5000:30001/TCP               25h
+![image](https://github.com/GOWTHAMSAMMANGI/Upgrad-Capstone-1-Python/assets/62459668/95330f50-eaca-469e-8538-7b1540741e89)
+
+Now run the command `kubectl get svc my-kube-prometheus-stack-grafana` and you will be redirected to grafana dashboard. For username and password go to kubernetes cluster and run the command `kubectl edit secret my-kube-prometheus-stack-grafana`. You will get similar results like this: 
 ```
-Now run the command `minikube service my-kube-prometheus-stack-grafana` and you will be redirected to grafana dashboard. For username and password go to kubernetes cluster and run the command `kubectl edit secret my-kube-prometheus-stack-grafana`. You will get similar results like this: 
-```
+
 # Please edit the object below. Lines beginning with a '#' will be ignored,
 # and an empty file will abort the edit. If an error occurs while saving this file will be
 # reopened with the relevant failures.
@@ -188,6 +129,7 @@ echo -n "YWRtaW4==" | base64 --decode
 echo -n "cHJvbS1vcGVyYXRvcg==" | base64 --decode
 ```
 Now login to Grafana and create a new dashboard. And you will get a similar output
-![Grafana Dashboard](./Screenshots/Screenshot%20(87).png "python-application")
+![image](https://github.com/GOWTHAMSAMMANGI/Upgrad-Capstone-1-Python/assets/62459668/386b0d8e-ca55-4ca8-8e0a-2b94244ed3dc)
+
 
 ### Thank you.
