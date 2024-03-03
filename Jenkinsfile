@@ -51,7 +51,7 @@ pipeline {
                }
             }
         }    
-        stage('Deploying Prometheus & Grafana containers') {
+        stage('Monitoring with Prometheus & Grafana') {
            steps {
                 sh "helm repo add prometheus-community https://prometheus-community.github.io/helm-charts"
                 sh "helm repo update"
