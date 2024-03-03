@@ -96,3 +96,22 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# helm repo add elastic https://helm.elastic.co
+# helm repo update
+# # values.yaml
+# elasticsearch:
+#   replicas: 1
+#   minimumMasterNodes: 1
+#   antiAffinity: false
+
+# kibana:
+#   replicas: 1
+
+# logstash:
+#   replicas: 1
+# helm install elasticsearch elastic/elasticsearch -f values.yaml
+# helm install kibana elastic/kibana -f values.yaml
+# helm install logstash elastic/logstash -f values.yaml
+# kubectl port-forward service/kibana-kibana 5601:5601 --namespace=default
+
