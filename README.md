@@ -4,9 +4,10 @@ This deployment will focus on containerization using `Docker`, `Kubernetes` orch
 
 ## Prerequisites
 
-This tools should be installed on your vms:
+This tools should be installed :
 - Docker
 - Kubectl
+- Terraform
 - AWS EKS
 - Helm
 - Jenkins
